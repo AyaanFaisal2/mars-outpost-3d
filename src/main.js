@@ -339,26 +339,44 @@ function debrief(k) {
   <div class="row wrap"><button class="alt" data-a="board">🏆 Leaderboard</button><button class="alt" data-a="book">📖 Space Book</button><button class="alt" data-a="credits">🛰️ NASA data</button><button class="alt" data-a="print">🖨️ Print</button></div></div></div></div>`);
 }
 
-// ---------- leaderboard (this device; swap these two for an online board later) ----------
+// ---------- leaderboard (global board via /api/leaderboard; falls back to this device) ----------
 const loadBoard = () => get('mo-board', []);
 const saveScore = row => put('mo-board', [...loadBoard(), row].slice(-200));
 const ADJ = ['Rover', 'Comet', 'Dusty', 'Rocket', 'Crater', 'Orbit', 'Nova', 'Lunar'], ANI = ['Fox', 'Owl', 'Lynx', 'Otter', 'Hawk', 'Panda', 'Gecko', 'Wolf'];
 function gen() { S.gen = ADJ[Math.random() * 8 | 0] + ' ' + ANI[Math.random() * 8 | 0]; q('cs').value = S.gen; }
-function submitScore() {
+async function submitScore() {
   const v = q('cs').value.trim(), name = v == S.gen ? v : v.toUpperCase();
   if (name != S.gen && !/^[A-Z]{3}$/.test(name)) return alert('Use 3 letters (like ZAP) or tap 🎲 for a crew name.');
   const id = Date.now(), sc = score(S);
-  saveScore({ id, name, hard: S.hard, won: !!sc, total: sc ? sc.total : 0, sci: S.sci | 0, sols: sol(), code: S.code, date: new Date().toISOString().slice(0, 10) });
-  q('ent').innerHTML = '<p>✅ Saved to the leaderboard!</p>';
+  const row = { id, name, hard: S.hard, won: !!sc, total: sc ? sc.total : 0, sci: S.sci | 0, sols: sol(), code: S.code, date: new Date().toISOString().slice(0, 10) };
+  saveScore(row);
+  let online = false;
+  try {
+    const r = await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(row) });
+    online = r.ok;
+  } catch {}
+  q('ent').innerHTML = online ? '<p>✅ Saved! Your mission is on the 🌍 worldwide board.</p>'
+    : '<p>✅ Saved to this device (🌍 worldwide board unreachable — offline?).</p>';
   board(id);
 }
-function board(hl) {
-  const b = loadBoard();
+async function fetchGlobal() {
+  try {
+    const r = await fetch('/api/leaderboard');
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && j.global ? j : null;
+  } catch { return null; }
+}
+async function board(hl) {
+  const g = await fetchGlobal();
+  const b = g || { easy: null, hard: null, early: null };
+  const local = loadBoard();
+  const pick = rows => rows || local; // fall back to this device when the board is unreachable
   const tbl = (rows, h) => rows.length ? `<table><tr><th>#</th><th>Crew</th><th>${h}</th><th>🔬</th><th>Code</th></tr>${rows.map((r, i) => `<tr class="${r.id == hl ? 'hl' : ''}"><td>${i + 1}</td><td>${esc(r.name)}</td><td><b>${r.won ? r.total : r.sols}</b></td><td>${r.sci}</td><td class="code">${esc(r.code)}</td></tr>`).join('')}</table>` : '<p><small>No missions yet. Be the first!</small></p>';
-  const won = m => b.filter(r => r.won && !!r.hard == m).sort((x, y) => y.total - x.total || y.sci - x.sci).slice(0, 10);
-  const early = b.filter(r => !r.won).sort((x, y) => y.sols - x.sols || y.sci - x.sci).slice(0, 10);
-  ov(`<div class="ov"><div class="c wide" role="dialog" aria-modal="true" aria-labelledby="lb"><h2 id="lb">🏆 Leaderboard</h2>
-  <p><small>Score = what is left after ${SOLS} sols: 🫁 + ⚡ + 🥬 + ☢️ budget left (up to 400), × 1.5 on Hard. 🔬 science breaks ties. Type a code on the title screen to fly the same mission. Saved on this device only.</small></p>
+  const won = m => pick(b[m]).filter(r => r.won && !!r.hard == m).sort((x, y) => y.total - x.total || y.sci - x.sci).slice(0, 10);
+  const early = pick(b.early).filter(r => !r.won).sort((x, y) => y.sols - x.sols || y.sci - x.sci).slice(0, 10);
+  ov(`<div class="ov"><div class="c wide" role="dialog" aria-modal="true" aria-labelledby="lb"><h2 id="lb">🏆 Leaderboard <small>${g ? '🌍 worldwide' : '💾 this device (offline)'}</small></h2>
+  <p><small>Score = what is left after ${SOLS} sols: 🫁 + ⚡ + 🥬 + ☢️ budget left (up to 400), × 1.5 on Hard. 🔬 science breaks ties. Type a code on the title screen to fly the same mission.${g ? ' Showing every player\'s best missions.' : ' Could not reach the worldwide board, showing this device only.'}</small></p>
   <h3>🟢 Easy</h3>${tbl(won(false), 'Score')}<h3>🔴 Hard</h3>${tbl(won(true), 'Score')}<h3>🛰️ Missions that ended early</h3>${tbl(early, 'Sols')}
   <button data-a="closeOv">✖ Close</button></div></div>`);
   q('ov').querySelector('[data-a=closeOv]').focus();
