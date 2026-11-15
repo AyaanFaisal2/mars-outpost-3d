@@ -1,0 +1,124 @@
+:root { --p: rgba(30, 16, 18, .78); --ink: #fff4ec; --ok: #4cd07d; --w: #ffc233; --bad: #ff5a4e; --a: #e8602c }
+* { box-sizing: border-box }
+html, body { height: 100%; overflow: hidden }
+body { margin: 0; color: var(--ink); font: 16px/1.4 system-ui, sans-serif; background: #120a0c }
+h1, h2, h3 { margin: .3em 0 }
+button { font: inherit; color: inherit; background: var(--a); border: 0; border-radius: 12px; padding: 8px 12px; min-height: 44px; cursor: pointer; text-align: center }
+button.alt { background: #4b2d33 }
+button:disabled { opacity: .4; cursor: default }
+button:focus-visible, input:focus-visible { outline: 3px solid #fff }
+input { font: inherit; padding: 10px 12px; border-radius: 12px; border: 0; text-transform: uppercase; flex: 1; min-width: 0 }
+
+/* 3D world fills the screen; UI floats on top and lets clicks through its gaps */
+#world { position: fixed; inset: 0 }
+#world canvas { display: block; touch-action: none }
+.labels { position: absolute; inset: 0; pointer-events: none }
+.tint { position: absolute; inset: 0; background: #ff463c; opacity: 0; pointer-events: none; mix-blend-mode: screen }
+.lbl { pointer-events: auto; min-height: 0; padding: 3px 8px 5px; border-radius: 10px; background: var(--p); font-size: 13px; display: grid; grid-template-columns: auto auto; gap: 0 5px; align-items: center; backdrop-filter: blur(4px) }
+.lbl:disabled { opacity: .7; cursor: default }
+.lbl i { grid-column: 1 / -1; display: block; height: 4px; width: 48px; border-radius: 2px; background: #0007; margin-top: 3px }
+.lbl s { display: block; height: 100%; border-radius: 2px; text-decoration: none }
+.lbl em { grid-column: 1 / -1; font-size: 11px; font-style: normal; color: var(--w) }
+.lbl em:empty { display: none }
+
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px; pointer-events: none; overflow: auto }
+#app > *, .top > * { pointer-events: auto }
+.top { display: grid; gap: 6px; max-width: 980px; width: 100%; margin: 0 auto; pointer-events: none }
+.spacer { flex: 1; pointer-events: none !important }
+.center { margin: auto; max-width: 560px; width: 100% }
+
+.c { background: var(--p); border-radius: 16px; padding: 10px 12px; backdrop-filter: blur(6px) }
+.hud { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.hud span { flex: 1; min-width: 80px }
+.hud i { display: block; height: 10px; border-radius: 5px; background: #0007 }
+.hud i b { display: block; height: 100%; border-radius: 5px; background: var(--w) }
+.nx { font-size: 15px; padding: 8px 12px; border: 2px solid var(--ok) }
+.rm.go { border: 2px solid var(--w); box-shadow: 0 0 12px var(--w) }
+.btns .go { outline: 3px solid var(--w); animation: glow 1.2s infinite }
+@keyframes glow { 50% { box-shadow: 0 0 16px 4px var(--w) } }
+.steps { padding-left: 1.3em } .steps li { margin: 8px 0 }
+.fc { font-size: 14px; padding: 6px 12px; justify-self: start }
+.bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px }
+.m { background: var(--p); border-radius: 12px; padding: 6px 4px; min-height: 0; text-align: center; font-size: 14px; backdrop-filter: blur(6px); display: block; width: 100% }
+.m i { display: block; height: 8px; border-radius: 4px; background: #0007; margin-top: 4px }
+.m i b { display: block; height: 100%; border-radius: 4px; background: var(--ok); transition: width .3s }
+.m.w i b { background: var(--w) }
+.m.x i b { background: var(--bad) }
+.m.x { animation: pl 1s infinite }
+
+.rooms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 980px; width: 100%; margin: 0 auto }
+.rm { background: var(--p); border: 2px solid #7a4a3d; border-radius: 14px; padding: 6px; display: grid; gap: 4px; text-align: center; font-size: 14px; backdrop-filter: blur(6px) }
+.rm.k { border: 2px dashed var(--w) }
+.rm.d { border: 2px dashed var(--bad) }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 4px }
+.btns button { padding: 6px 4px; font-size: 14px; line-height: 1.2 }
+.btns small { opacity: .85 }
+.nw { font-size: 14px; padding: 6px 12px; max-width: 1200px; width: 100%; margin: 0 auto }
+.g { display: grid; gap: 8px }
+.row { display: flex; gap: 8px }
+.code { font-family: ui-monospace, monospace; letter-spacing: 2px }
+
+.ov { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 5; overflow: auto }
+.ov .c { max-width: 560px; width: 100%; background: #2b1a1c }
+.fl { position: fixed; z-index: 9; pointer-events: none; font-weight: 700; text-shadow: 0 0 4px #000; animation: up 1s forwards }
+@keyframes up { to { transform: translate(var(--dx, 0), -70px); opacity: 0 } }
+@keyframes pl { 50% { transform: scale(1.07) } }
+@keyframes sh { 20% { transform: translate(-7px, 3px) } 40% { transform: translate(7px, -3px) } 60% { transform: translate(-4px, -2px) } 80% { transform: translate(4px, 2px) } }
+.sh #app { animation: sh .5s }
+
+/* Space Book, tips, Mission Control, leaderboard */
+.gw { background: none; padding: 0; min-height: 0; border-radius: 0; color: inherit; font: inherit; text-decoration: underline dotted 2px; text-underline-offset: 3px; display: inline }
+.gw:hover { color: #ffd9a8 }
+.info { background: none; padding: 0 2px; min-height: 0; font-size: 13px }
+.rm em { font-size: 12px; font-style: normal; color: var(--w); min-height: 1em }
+.sub { margin: 0; color: #ffc9a8; font-weight: 600 }
+.real { background: #0004; border-radius: 10px; padding: 8px 10px; font-size: 14px }
+a { color: #ffd9a8 }
+.mc { background: #1d4a2c; border-radius: 10px; padding: 6px 10px }
+.mcb { background: #23406b }
+.top-ov { z-index: 7 }
+.card { max-width: 480px }
+.card .big, .big { font-size: 19px }
+.say { color: #ffc9a8; margin: 0 }
+details { margin: 6px 0 } summary { cursor: pointer; font-weight: 600; padding: 4px 0 }
+.book { max-width: 720px !important }
+.words { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin-bottom: 6px }
+.words button { text-align: left }
+.unk { border: 2px dashed #7a4a3d; border-radius: 12px; padding: 8px 12px; opacity: .75 }
+.tip { font-size: 14px; display: flex; gap: 8px; align-items: center; justify-self: start; border: 2px solid var(--w) }
+.tip[hidden] { display: none }
+.tip > button { min-height: 32px; padding: 4px 10px; font-size: 13px }
+.wrap { flex-wrap: wrap }
+.c2 { background: #0003; border-radius: 12px; padding: 8px 12px; margin: 8px 0 }
+.chain { padding-left: 1.4em } .chain li { margin: 2px 0 }
+.score { font-size: 18px }
+.ov .wide { max-width: 760px }
+table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 8px }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #fff2 }
+tr.hl td { background: #e8602c55; font-weight: 700 }
+
+/* departure cutscene: letterbox bars + captions */
+.cine { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 16px 13vh }
+.cine::before, .cine::after { content: ''; position: fixed; left: 0; right: 0; height: 11vh; background: #000; animation: bar 1s ease-out both }
+.cine::before { top: 0 } .cine::after { bottom: 0 }
+.cine p { font-size: clamp(20px, 4vw, 34px); font-weight: 800; text-align: center; text-shadow: 0 2px 12px #000, 0 0 2px #000; margin: 0; max-width: 900px; animation: cap .6s ease-out }
+.cine p:empty { display: none }
+.cine button { pointer-events: auto; position: fixed; top: calc(11vh + 12px); right: 16px; z-index: 1 }
+@keyframes bar { from { height: 0 } }
+@keyframes cap { from { opacity: 0; transform: translateY(12px) scale(.96) } }
+
+@media (max-width: 900px) {
+  .rooms { display: flex; overflow-x: auto; scroll-snap-type: x mandatory }
+  .rm { flex: 0 0 170px; scroll-snap-align: start }
+}
+@media (max-width: 560px) {
+  .bar { grid-template-columns: repeat(2, 1fr) }
+  .hud { gap: 6px }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }
+@media print {
+  html, body { overflow: visible; background: #fff; color: #000 }
+  #world, button { display: none }
+  #app { position: static }
+  .c { background: none }
+}
