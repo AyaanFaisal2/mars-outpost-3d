@@ -60,7 +60,8 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const [easy, hard, early] = await Promise.all([top(K.easy), top(K.hard), top(K.early)]);
-      return res.status(200).json({ global: true, easy, hard, early });
+      const url = String(process.env.KV_REST_API_URL || '');
+      return res.status(200).json({ global: true, easy, hard, early, debug: { hasUrl: !!url, hasToken: !!process.env.KV_REST_API_TOKEN, host: url.replace(/^https:\/\/(.{6}).*/, '$1…') } });
     }
 
     if (req.method === 'POST') {
