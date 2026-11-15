@@ -43,8 +43,10 @@ async function top(key, n = 10) {
   const rows = await redis.zrange(key, 0, n - 1, { rev: true, withScores: true });
   const out = [];
   for (let i = 0; i < rows.length; i += 2) {
-    const row = parse(rows[i]);
-    if (!row) continue;
+    const raw = rows[i];
+    // The client auto-deserializes JSON members, so handle both strings and objects
+    const row = typeof raw === 'string' ? parse(raw) : raw;
+    if (!row || typeof row !== 'object') continue;
     row.total = num(rows[i + 1], 0, 99999);
     out.push(row);
   }
@@ -60,8 +62,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const [easy, hard, early] = await Promise.all([top(K.easy), top(K.hard), top(K.early)]);
-      const url = String(process.env.KV_REST_API_URL || '');
-      return res.status(200).json({ global: true, easy, hard, early, debug: { hasUrl: !!url, hasToken: !!process.env.KV_REST_API_TOKEN, host: url.replace(/^https:\/\/(.{6}).*/, '$1…') } });
+      return res.status(200).json({ global: true, easy, hard, early });
     }
 
     if (req.method === 'POST') {
